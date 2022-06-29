@@ -10,10 +10,13 @@ module.exports = {
 			option.setName('slot')
 			.setDescription(`Select which slot to save the server state in`)
 			.setRequired(true)
-			.setMinValue(0)
-			.setMaxValue(9)),
+			.setMinValue(1)
+			.setMaxValue(9))
+		.addStringOption(option => 
+			option.setName('title')
+			.setDescription(`Give a name to the save state`)),
 	async execute(interaction) {
-
+		
 		const channels = {}
 		interaction.guild.channels.cache.forEach(channel => {
 			channels[`${channel.id}`] = {
@@ -29,10 +32,16 @@ module.exports = {
 		})
 
 		const slot = interaction.options.getInteger(`slot`)
+		const title = interaction.options.getString(`title`)
 
 		const saveState = {
-			channels: channels,
-			roles: roles
+			info: {
+				title: title
+			},
+			data: {
+				channels: channels,
+				roles: roles
+			}
 		}
 
 		const guildDir = `./db/server save states/${interaction.guild.id}`

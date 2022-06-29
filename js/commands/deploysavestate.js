@@ -11,7 +11,7 @@ module.exports = {
 			option.setName('slot')
 			.setDescription(`Select which slot to retrieve the server state from`)
 			.setRequired(true)
-			.setMinValue(0)
+			.setMinValue(1)
 			.setMaxValue(9)),
 	async execute(interaction) {
 
@@ -30,21 +30,30 @@ module.exports = {
 		const slotFileData = fs.readFileSync(filePath)
 		const saveState = JSON.parse(slotFileData)
 
-		const channels = saveState.channels
-		Object.keys(channels).forEach(id => { // this can sometimes exceed discord rate limits
+		const title = saveState.info.title
+		const titleResponseStr = title ? ` titled "${title}"` : ``
+
+		const channels = saveState.data.channels
+		Object.keys(channels).forEach(id => {
 			interaction.guild.channels.fetch(id)
-				.then(channel => channel.edit({name: channels[id].name}))
-				.catch(err => console.error(`\nError fetching channel "${channels[id].name}" (id "${id}"):\n${err}\n`))
+				.then(channel => {
+					if (channel.name !== channels[id].name)
+						channel.edit({name: channels[id].name})
+				})
+				.catch(err => console.error(`\nError fetching channel "${channels[id].name}" for deployment (channel id "${id}"):\n${err}\n`))
 		})
 
-		const roles = saveState.roles
-		Object.keys(roles).forEach(id => { // this can sometimes exceed discord rate limits
+		const roles = saveState.data.roles
+		Object.keys(roles).forEach(id => {
 			interaction.guild.roles.fetch(id)
-				.then(role => role.edit({name: roles[id].name}))
-				.catch(err => console.error(`\nError fetching role "${roles[id].name}" (id "${id}"):\n${err}\n`))
+				.then(role => {
+					if (role.name !== roles[id].name)
+						role.edit({name: roles[id].name})
+				})
+				.catch(err => console.error(`\nError fetching role "${roles[id].name}" for deployment (role id "${id}"):\n${err}\n`))
 		})
 
 		console.log(`Deployed save state from slot ${slot} for server "${interaction.guild.name}"`)
-		interaction.reply({content: `Deployed server state from slot ${slot}`, ephemeral: true})
+		interaction.reply({content: `Deployed server state${titleResponseStr} from slot ${slot}`, ephemeral: true})
 	},
 };
