@@ -17,8 +17,9 @@ for (const file of commandFiles) {
 
 client.once('ready', () => {
 	console.log('Ready!');
-	client.user.setActivity(`the channels disappear`, {type: `WATCHING`})
+	client.user.setActivity(`channels disappear`, {type: `WATCHING`})
 });
+
 client.on('rateLimit', (info) => {
 	console.log(`Rate limit hit ${info.timeDifference ? info.timeDifference : info.timeout ? info.timeout: 'Unknown timeout '}`)
 })
