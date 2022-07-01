@@ -1,12 +1,14 @@
 const writeDataToSlot = require("./writedatatoslot.js")
 
-const saveServerState = async (guild, slot, title) => {
+const saveServerState = async (guild, slot, title, user) => {
 	const channelNamesById = {}
 	guild.channels.cache.forEach(channel => channelNamesById[channel.id] = channel.name)
 
 	const saveState = {
 		info: {
-			title: title
+			title: title,
+			date: new Date(),
+			user: user.id
 		},
 		data: {
 			channels: channelNamesById
