@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const { MessageActionRow, MessageButton } = require('discord.js');
 const saveServerState = require('../backup/saveserverstate');
 const loadServerState = require('../backup/loadserverstate');
+const listServerStates = require('../backup/listserverstates');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -47,10 +48,11 @@ module.exports = {
 		const guild = interaction.guild
 		const slot = interaction.options.getInteger(`slot`)
 		const title = interaction.options.getString(`title`)
+		const user = interaction.user
 
 		switch (interaction.options.getSubcommand()) {
 			case `save`:
-				saveServerState(guild, slot, title).then(_ => {
+				saveServerState(guild, slot, title, user).then(_ => {
 					interaction.reply(`Saved backup to slot ${slot}`)
 				}).catch(err => {
 					console.error(`\n${guild.name} failed to save backup to slot ${slot}\n`, err)
@@ -66,7 +68,8 @@ module.exports = {
 				})
 				break;
 			case `list`:
-				
+				const serverStateInfos = await listServerStates(guild)
+				interaction.reply(`\`\`\`json\n${JSON.stringify(serverStateInfos, null, `\t`)}\n\`\`\``)
 				break;
 		}
 	},
