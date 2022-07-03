@@ -2,7 +2,9 @@ const writeDataToSlot = require("./writedatatoslot.js")
 
 const saveServerState = async (guild, slot, title, user) => {
 	const channelNamesById = {}
+	const roleNamesById = {}
 	guild.channels.cache.forEach(channel => channelNamesById[channel.id] = channel.name)
+	guild.roles.cache.forEach(role => roleNamesById[role.id] = role.name)
 
 	const saveState = {
 		info: {
@@ -11,7 +13,8 @@ const saveServerState = async (guild, slot, title, user) => {
 			user: user.id
 		},
 		data: {
-			channels: channelNamesById
+			channels: channelNamesById,
+			roles: roleNamesById
 		}
 	}
 
