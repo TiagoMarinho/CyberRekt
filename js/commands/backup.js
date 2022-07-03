@@ -60,11 +60,12 @@ module.exports = {
 				})
 				break;
 			case `load`:
+				await interaction.deferReply()
 				loadServerState(guild, slot).then(_ => {
-					interaction.reply(`Deployed backup from slot ${slot}`)
+					interaction.editReply(`Deployed backup from slot ${slot}`)
 				}).catch(err => {
 					console.error(`\n${guild.name} failed to load backup from slot ${slot}\n`, err)
-					interaction.reply(`Failed to load backup from slot ${slot}`)
+					interaction.editReply(`Failed to load backup from slot ${slot}`)
 				})
 				break;
 			case `list`:
