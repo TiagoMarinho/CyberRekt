@@ -53,14 +53,14 @@ module.exports = {
 		switch (interaction.options.getSubcommand()) {
 			case `save`:
 				saveServerState(guild, slot, title, user).then(_ => {
-					interaction.reply(`Saved backup to slot ${slot}`)
+					interaction.reply({content: `Saved backup to slot ${slot}`, ephemeral: true})
 				}).catch(err => {
 					console.error(`\n${guild.name} failed to save backup to slot ${slot}\n`, err)
-					interaction.reply(`Failed to save backup to slot ${slot}`)
+					interaction.reply({content: `Failed to save backup to slot ${slot}`, ephemeral: true})
 				})
 				break;
 			case `load`:
-				await interaction.deferReply()
+				await interaction.deferReply({ephemeral: true})
 				loadServerState(guild, slot).then(_ => {
 					interaction.editReply(`Deployed backup from slot ${slot}`)
 				}).catch(err => {
@@ -70,7 +70,7 @@ module.exports = {
 				break;
 			case `list`:
 				const serverStateInfos = await listServerStates(guild)
-				interaction.reply(`\`\`\`json\n${JSON.stringify(serverStateInfos, null, `\t`)}\n\`\`\``)
+				interaction.reply({content: `\`\`\`json\n${JSON.stringify(serverStateInfos, null, `\t`)}\n\`\`\``, ephemeral: true})
 				break;
 		}
 	},
