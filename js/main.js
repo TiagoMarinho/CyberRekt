@@ -6,13 +6,18 @@ const { token } = require('../config.json');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 
 client.commands = new Collection();
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
-for (const file of commandFiles) {
-	const filePath = path.join(commandsPath, file);
-	const command = require(filePath);
-	client.commands.set(command.data.name, command);
+const commandCategoryFolders = fs.readdirSync('./js/commands');
+for (const categoryFolder of commandCategoryFolders) {
+	const commandFolders = fs.readdirSync(`./js/commands/${categoryFolder}`);
+	for (const commandFolder of commandFolders) {
+		const commandFiles = fs.readdirSync(`./js/commands/${categoryFolder}/${commandFolder}`).filter(file => file.endsWith('.js'));
+		for (const file of commandFiles) {
+			const filePath = path.resolve(__dirname, `commands/${categoryFolder}/${commandFolder}/${file}`)
+			const command = require(filePath);
+			client.commands.set(command.data.name, command);
+		}
+	}
 }
 
 client.once('ready', () => {
