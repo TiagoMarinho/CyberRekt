@@ -43,7 +43,7 @@ module.exports = {
 				)
 		),
 	async execute(interaction) {
-		await interaction.deferReply({ephemeral: true})
+		await interaction.deferReply({ephemeral: false})
 		const prefix = interaction.options.getString(`prefix`) || ``
 		const suffix = interaction.options.getString(`suffix`) || ``
 		const datablocks = interaction.guild[interaction.options.getSubcommandGroup()].cache

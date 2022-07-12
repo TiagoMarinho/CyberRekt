@@ -5,7 +5,7 @@ const backupLoad = async (interaction) => {
 	const guild = interaction.guild
 	const slot = interaction.options.getInteger(`slot`)
 
-	await interaction.deferReply({ephemeral: true})
+	await interaction.deferReply({ephemeral: false})
 	loadServerState(guild, slot).then(_ => {
 		interaction.editReply(`Deployed backup from slot ${slot}`)
 	}).catch(err => {
