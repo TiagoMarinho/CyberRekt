@@ -3,7 +3,7 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('rename')
-		.setDescription('Changes the name of multiple things at once')
+		.setDescription('Change the name of multiple things at once')
 		.setDefaultMemberPermissions(0)
 
 		.addSubcommandGroup (subcommandGroup =>
@@ -46,10 +46,11 @@ module.exports = {
 		await interaction.deferReply({ephemeral: true})
 		const prefix = interaction.options.getString(`prefix`) || ``
 		const suffix = interaction.options.getString(`suffix`) || ``
-		interaction.guild[interaction.options.getSubcommandGroup()].cache.forEach(async (datablock) => {
-			await interaction.guild[interaction.options.getSubcommandGroup()].edit(datablock.id, {name: `${prefix}${datablock.name}${suffix}`})
+		const datablocks = interaction.guild[interaction.options.getSubcommandGroup()].cache
+		for (const datablock of datablocks) {
+			await interaction.guild[interaction.options.getSubcommandGroup()].edit(datablock[0], {name: `${prefix}${datablock[1].name}${suffix}`})
 				.catch(console.error)
-		})
-		interaction.editReply(`Successfully queued changes to channel names`)
+		}
+		interaction.editReply(`Successfully renamed channels`)
 	},
 };
