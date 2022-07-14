@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 
 const writeDataToSlot = async (guildId, slot, data) => {
-	const path = `./db/backups/${guildId}`
+	const path = `./db/guilds/${guildId}/backups`
 	const fullPath = `${path}/slot${slot}.json`
 
 	await fs.promises.mkdir(path, { recursive: true })
