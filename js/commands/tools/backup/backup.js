@@ -7,6 +7,7 @@ const listServerStates = require('./helpers/listserverstates');
 const backupSave = require('./subcommands/backupsave');
 const backupLoad = require('./subcommands/backupload');
 const backupList = require('./subcommands/backuplist');
+const backupManage = require('./subcommands/backupmanage');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -44,6 +45,12 @@ module.exports = {
 			subcommand
 				.setName(`list`)
 				.setDescription(`Lists all backup slots`)
+		)
+
+		.addSubcommand(subcommand => 
+			subcommand
+				.setName(`manage`)
+				.setDescription(`Manage all backups`)
 		),
 
 	async execute(interaction) {
@@ -56,6 +63,9 @@ module.exports = {
 				break;
 			case `list`:
 				backupList(interaction)
+				break;
+			case `manage`:
+				backupManage(interaction)
 				break;
 		}
 	},
