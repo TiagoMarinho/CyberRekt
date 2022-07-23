@@ -2,9 +2,39 @@ const { MessageActionRow, MessageButton, MessageEmbed, Formatters } = require('d
 const readDataFromSlot = require('../helpers/readdatafromslot');
 
 const backupManage = async (interaction) => {
-	await interaction.deferReply({ephemeral: false})
+	let slot = interaction.options.getInteger(`slot`) || 1
 
-	const slotData = await readDataFromSlot(interaction.guild.id, 1)
+	await interaction.deferReply({ephemeral: false})
+	const response = await renderPage(interaction.guild, slot)
+	const reply = await interaction.editReply(response)
+
+	const minutesToMilliseconds = min => 1000 * 60 * min
+	const collectorDuration = minutesToMilliseconds(5)
+	const collector = reply.createMessageComponentCollector({ componentType: 'BUTTON', time: collectorDuration })
+
+	collector.on(`collect`, async (i) => {
+
+		if (i.user.id !== interaction.user.id) 
+			return i.reply({ content: `These buttons aren't for you!`, ephemeral: true })
+
+		switch (i.customId) {
+			case `previous`:
+				const prev = await renderPage(interaction.guild, --slot)
+				i.deferUpdate()
+				interaction.editReply(prev)
+				break
+			case `next`:
+				const next = await renderPage(interaction.guild, ++slot)
+				i.deferUpdate()
+				interaction.editReply(next)
+				break
+		}
+	})
+}
+const renderPage = async (guild, slot) => {
+
+	const slotData = await readDataFromSlot(guild.id, slot)
+		.catch(console.error)
 
 	const rowData = [
 		[
@@ -13,8 +43,8 @@ const backupManage = async (interaction) => {
 			{label: `Delete`, id: `delete`, style: `DANGER`},
 		],
 		[
-			{label: `Previous`, id: `previous`, style: `PRIMARY`, disabled: true},
-			{label: `Next`, id: `next`, style: `PRIMARY`},
+			{label: `Previous`, id: `previous`, style: `PRIMARY`, disabled: slot === 1},
+			{label: `Next`, id: `next`, style: `PRIMARY`, disabled: slot === 9},
 		]
 	]
 
@@ -34,21 +64,24 @@ const backupManage = async (interaction) => {
 		return row
 	})
 
-	const author = interaction.guild.members.cache.get(slotData.info.user).user // maybe undefined/null if user left server?
+	const author = guild.members.cache.get(slotData?.info?.user)?.user // maybe undefined/null if user left server?
+	const creationDate = slotData ? Formatters.time(new Date(slotData.info.date), `R`) : `empty`
+	const authorString = author ? `${author.username}#${author.discriminator}` : `empty`
 
 	const embed = new MessageEmbed()
 		.setColor('#A50A39')
 		.setTitle('Backup Management')
 		.setDescription('Manage all backups for this guild')
 		.addFields(
-			{name: `Slot:`, value: `1`},
-			{name: `Title:`, value: slotData.info.title},
-			{name: `Created:`, value: Formatters.time(new Date(slotData.info.date), `R`)},
-			{name: `Author:`, value: `${author.username}#${author.discriminator}`},
+			{name: `Slot`, value: `${slot}`},
+			{name: `Status`, value: `Populated`},
+			{name: `Title`, value: slotData?.info?.title || `empty`},
+			{name: `Created`, value: creationDate},
+			{name: `Author`, value: authorString},
 		)
 		.setTimestamp()
 
-	await interaction.editReply({embeds: [embed], components: rows})
+	return {embeds: [embed], components: rows}
 }
 
 module.exports = backupManage

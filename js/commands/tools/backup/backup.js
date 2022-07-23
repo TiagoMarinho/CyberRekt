@@ -51,22 +51,28 @@ module.exports = {
 			subcommand
 				.setName(`manage`)
 				.setDescription(`Manage all backups`)
+				.addIntegerOption(option => 
+					option.setName('slot')
+					.setDescription(`Slot number to show first`)
+					.setMinValue(1)
+					.setMaxValue(9))
 		),
 
 	async execute(interaction) {
+
 		switch (interaction.options.getSubcommand()) {
 			case `save`:
 				backupSave(interaction)
-				break;
+				break
 			case `load`:
 				backupLoad(interaction)
-				break;
+				break
 			case `list`:
 				backupList(interaction)
-				break;
+				break
 			case `manage`:
 				backupManage(interaction)
-				break;
+				break
 		}
 	},
 };
