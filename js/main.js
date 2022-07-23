@@ -7,11 +7,12 @@ const fetchCommandsByCategory = require('./helpers/fetchcommands')
 class DiscordBot {
 
 	client = new Client({ intents: [Intents.FLAGS.GUILDS] })
+	activityStatus = [`channels disappear`, {type: `WATCHING`}]
 
-	run () {
+	login () {
 		this.client.once('ready', () => {
 			console.log(`Ready!`)
-			this.client.user.setActivity(`channels disappear`, {type: `WATCHING`})
+			this.client.user.setActivity(...this.activityStatus)
 		});
 
 		this.client.login(token);
@@ -51,7 +52,7 @@ class DiscordBot {
 }
 
 const cyberRekt = new DiscordBot()
-cyberRekt.run()
+cyberRekt.login()
 cyberRekt.loadCommands()
 cyberRekt.handleCommands()
 cyberRekt.listenToRateLimit()
