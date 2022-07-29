@@ -52,18 +52,23 @@ module.exports = {
 				)
 		),
 	async execute(interaction) {
+
 		await interaction.deferReply({ephemeral: false})
+
 		const prefix = interaction.options.getString(`prefix`) || ``
 		const suffix = interaction.options.getString(`suffix`) || ``
 		const separator = interaction.options.getString(`separator`) || ``
+
 		const datablocks = interaction.guild[interaction.options.getSubcommandGroup()].cache
+
 		for (const datablock of datablocks) {
 			const interpolatedName = [...datablock[1].name].reduce((accumulator, char, index) => `${accumulator}${index > 0 ? separator : ``}${char}`, ``)
 			const finalName = `${prefix}${interpolatedName}${suffix}`
-			console.log(finalName)
+			
 			await interaction.guild[interaction.options.getSubcommandGroup()].edit(datablock[0], {name: finalName})
 				.catch(console.error)
 		}
+
 		interaction.editReply(`Successfully renamed channels`)
 	},
 };
