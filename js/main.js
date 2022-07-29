@@ -35,6 +35,9 @@ class DiscordBot {
 			const command = this.client.commands.get(interaction.commandName)
 		
 			if (!command) return
+
+			const fullUserTag = `${interaction.user.username}#${interaction.user.discriminator}`
+			console.log(`${fullUserTag} used /${interaction.commandName}`)
 		
 			try {
 				await command.execute(interaction)
