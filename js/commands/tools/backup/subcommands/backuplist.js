@@ -1,5 +1,5 @@
-const readDataFromSlot = require('../helpers/readdatafromslot.js');
-const { MessageEmbed, Formatters } = require('discord.js');
+const readDataFromSlot = require('../helpers/readdatafromslot.js')
+const { MessageEmbed, Formatters } = require('discord.js')
 
 const backupList = async (interaction) => {
 
@@ -7,26 +7,24 @@ const backupList = async (interaction) => {
 
 	const serverStateInfos = []
 	for (let slot = 1; slot < 10; ++slot) {
-		const serverState = await readDataFromSlot(guild.id, slot).catch(console.error)
-		const serverStateInfo = serverState?.info
+		const serverState = await readDataFromSlot(guild.id, slot)
+			.catch(console.error)
+		const serverStateInfo = serverState?.info || null
 		serverStateInfos.push(serverStateInfo)
 	}
 
 	const fields = []
-	for (const [index, serverState] of serverStateInfos.entries()) {
-		if (typeof serverState === `undefined`) {
-			const field = {
-				name: `Slot ${index + 1}`,
-				value: `Empty`
-			}
-			fields.push(field)
-			continue
-		}
+	for (const [index, serverStateInfo] of serverStateInfos.entries()) {
+		const slotNumber = index + 1
+		const dateCreated = Formatters.time(new Date(serverStateInfo?.date || 0), `R`)
+		const info = 
+			serverStateInfo === null ?
+			`Empty` :
+			`**Title:** ${serverStateInfo?.title || `Untitled`}\n**Created:** ${dateCreated}`
 
-		const dateCreated = Formatters.time(new Date(serverState.date), `R`)
 		const field = {
-			name: `Slot ${index + 1}`,
-			value: `Title: ${serverState.title}\nCreated: ${dateCreated}`
+			name: `Slot ${slotNumber}`,
+			value: info
 		}
 		fields.push(field)
 	}
