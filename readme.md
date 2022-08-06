@@ -20,8 +20,12 @@ Currently only the channel and role names can be saved and retrieved by this bot
 - `/rename channels affix [prefix] [suffix]` adds a prefix and suffix to the name of every channel from the server. 
 - `/rename channels interpolate [separator]` adds a separator string between every character of every channel name from the server.
 
-### Other
+### ASCII Art
 
-- `/asciiart [text] [font] [color]` draws ASCII art of the specified text with the chosen font, and using syntax highlighting to color the text with the chosen color.
+- `/asciiart text [string] [font] [color]` draws ASCII art of the specified text with the chosen font, and using syntax highlighting to color the text with the chosen color.
+- `/asciiart image [attachment] [resolution]` converts image to ASCII art.
+
+### Hashing
+
 - `/hash create [text]` hashes the provided string.
 - `/hash compare [text] [hash]` hashes the provided text and compares it to the provided hash.
