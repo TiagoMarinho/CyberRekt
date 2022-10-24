@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const fetch = require('node-fetch');
 const { MessageAttachment, MessageEmbed } = require('discord.js');
-const { getRandomInt } = require('../../../helpers/math.js');
+const requestBatch = require('./helpers/requestbatch.js');
 const { performance } = require('node:perf_hooks');
 
 module.exports = {
@@ -40,7 +40,7 @@ module.exports = {
 			.setDescription(`How many steps to refine the image for`)
 			.setRequired(false)
 			.setMinValue(10)
-			.setMaxValue(70))
+			.setMaxValue(100))
 		.addNumberOption(option => 
 			option.setName('cfg')
 			.setDescription(`How closely the output should follow the prompt`)
@@ -58,13 +58,13 @@ module.exports = {
 			.setDescription(`Width of the resulting image`)
 			.setRequired(false)
 			.setMinValue(64)
-			.setMaxValue(1024))
+			.setMaxValue(2048))
 		.addIntegerOption(option => 
 			option.setName('height')
 			.setDescription(`Height of the resulting image`)
 			.setRequired(false)
 			.setMinValue(64)
-			.setMaxValue(1024))
+			.setMaxValue(2048))
 		.addIntegerOption(option => 
 			option.setName('seed')
 			.setDescription(`Seed to use for the initial noise`)
@@ -107,31 +107,31 @@ module.exports = {
 		clearInterval(logEvery500msID)
 		console.log(`reply deferred!`)
 
-		const prompt = interaction.options.getString(`prompt`)
-		const negativePrompt = interaction.options.getString(`negative`) || ""
+		const prompt = interaction.options.getString(`prompt`) || undefined
+		const negativePrompt = interaction.options.getString(`negative`) || undefined
 
-		const sampler = interaction.options.getString(`sampler`) || "Euler"
-		const steps = interaction.options.getInteger(`steps`) || 35
-		const cfg = interaction.options.getNumber(`cfg`) || 11
-		const seed = interaction.options.getInteger(`seed`) || -1
+		const sampler = interaction.options.getString(`sampler`) || undefined
+		const steps = interaction.options.getInteger(`steps`) || undefined
+		const cfg = interaction.options.getNumber(`cfg`) || undefined
+		const seed = interaction.options.getInteger(`seed`) || undefined
 
-		const batchCount = interaction.options.getInteger(`batch`) || 1
+		const batchCount = interaction.options.getInteger(`batch`) || undefined
 
-		const width = interaction.options.getInteger(`width`) || 512
-		const height = interaction.options.getInteger(`height`) || 512
+		const width = interaction.options.getInteger(`width`) || undefined
+		const height = interaction.options.getInteger(`height`) || undefined
 
-		const prefix = interaction.options.getBoolean(`prefix`) || false
+		const prefix = interaction.options.getBoolean(`prefix`) || undefined
 
-		const subseed = interaction.options.getInteger(`varseed`) || -1
-		const subseedStrength = interaction.options.getNumber(`varstrength`) || 0
+		const subseed = interaction.options.getInteger(`varseed`) || undefined
+		const subseedStrength = interaction.options.getNumber(`varstrength`) || undefined
 
-		const inputImage = interaction.options.getAttachment(`image`)
-		const denoising = interaction.options.getNumber(`denoising`) || 0.75
+		const inputImage = interaction.options.getAttachment(`image`) || undefined
+		const denoising = interaction.options.getNumber(`denoising`) || undefined
 
 		console.log(`retrieved all command options!`)
 
 		// img2img
-		const isImg2Img = inputImage !== null
+		const isImg2Img = typeof inputImage !== `undefined`
 		let base64InputImage = null
 		if (isImg2Img) {
 			const inputImageUrlData = await fetch(inputImage.url)
@@ -141,12 +141,26 @@ module.exports = {
 
 		console.log(`past img2img code!`)
 
-		// calculate generation cost to figure out if the requested image will take too many resources
+		// calculate how long it will take to generate to prevent DDoS
+		const maximumTime = Infinity
 		const doubleCostSamplers = ['Heun', 'DPM2', 'DPM2 a', 'DPM2 Karras', 'DPM2 a Karras']
-		const defaultCost = 35 * 512 * 512
+		const defaultTimeCost = 35 * 512 * 512
+		const expectedTimePerDefaultImage = 2
 		const isHighCostSampler = doubleCostSamplers.includes(sampler)
 		const samplerCost = isHighCostSampler ? 2 : 1
-		const cost = steps * width * height * batchCount * samplerCost / defaultCost
+		const timeCost = steps * width * height * batchCount * samplerCost / defaultTimeCost
+		const timeCostThreshold = maximumTime / expectedTimePerDefaultImage
+
+		if (timeCost > timeCostThreshold)
+			return interaction.editReply(`Requested batch would take too long`)
+
+		// calculate generation cost at given resolution to check if it will fit in memory
+		const defaultResolutionCost = 512 * 512
+		const resolutionCost = (width * height) / defaultResolutionCost
+		const resolutionCostThreshold = 4
+		
+		if (resolutionCost > resolutionCostThreshold)
+			return interaction.editReply(`Requested image size is too high`)
 
 		// novelAI prefixing
 		const novelaiPromptPrefix = `masterpiece, best quality${prompt ? `, ` : ``}`
@@ -154,60 +168,32 @@ module.exports = {
 		const novelaiNegativePrefix = `lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name${negativePrompt ? `, ` : ``}`
 		const prefixedNegativePrompt = `${novelaiNegativePrefix}${negativePrompt}`
 
-		// width and height must be multiples of 64, 
-		// so we round to the closest one
-		const sanitizedWidth = Math.round(width / 64) * 64
-		const sanitizedHeight = Math.round(height / 64) * 64
+		const finalPrompt = prefix ? prefixedPrompt : prompt
+		const finalNegativePrompt = prefix ? prefixedNegativePrompt : negativePrompt
 
-		const requests = []
 		const results = []
-
-		const randomizedSeed = getRandomInt(1000000000, 9999999999)
 
 		console.log(`past variable declaration chunk!`)
 
-		for (let i = 0; i < batchCount; ++i) {
-			const finalSeed = (seed === -1 ? randomizedSeed : seed) + (subseedStrength > 0 ? 0 : i)
-			const payload = {
-				"init_images": [
-					base64InputImage
-				],
-				"enable_hr": false,
-				"denoising_strength": denoising,
-				"firstphase_width": 0,
-				"firstphase_height": 0,
-				"prompt": prefix ? prefixedPrompt : prompt,
-				"seed": finalSeed,
-				"subseed": subseed,
-				"subseed_strength": subseedStrength,
-				"seed_resize_from_h": -1,
-				"seed_resize_from_w": -1,
-				"batch_size": 1,
-				"n_iter": 1,
-				"steps": steps,
-				"cfg_scale": cfg,
-				"width": sanitizedWidth,
-				"height": sanitizedHeight,
-				"restore_faces": false,
-				"tiling": false,
-				"negative_prompt": prefix ? prefixedNegativePrompt : negativePrompt,
-				"eta": 0,
-				"s_churn": 0,
-				"s_tmax": 0,
-				"s_tmin": 0,
-				"s_noise": 1,
-				"sampler_index": sampler
-			}
-			const apiEndpoint = `http://127.0.0.1:7860/sdapi/v1/${isImg2Img ? `img` : `txt`}2img`
-			const request = fetch(apiEndpoint, {
-				method: 'post',
-				body: JSON.stringify(payload),
-				headers: {'Content-Type': 'application/json'}
-			})
-			requests.push(request)
-			console.log(`finished sending request ${i}!`)
-		}
+		const requests = 
+			await requestBatch(
+				batchCount,
+				finalPrompt,
+				finalNegativePrompt,
+				seed,
+				inputImage,
+				denoising,
+				subseed,
+				subseedStrength,
+				steps,
+				cfg,
+				width,
+				height,
+				sampler
+			)
+
 		console.log(`finished sending all requests!`)
+
 		for (const [index, request] of requests.entries()) {
 			const startTime = performance.now()
 			const response = await request
@@ -221,6 +207,7 @@ module.exports = {
 
 			results.push(...attachments)
 
+			const isFirstImage = index === 0
 			const isLastImage = index === requests.length - 1
 			const color = isLastImage ? `#2E8B21` : `#A50A39`
 
